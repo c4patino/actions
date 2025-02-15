@@ -1,0 +1,20 @@
+name: setup go
+
+description: set up a go environment
+runs:
+  using: composite
+  steps:
+    - name: install go
+      uses: actions/setup-go@v5.3.0
+      with:
+        go-version: 'stable'
+    - name: display go version
+      shell: bash
+      run: go version
+    - name: cache go modules
+      uses: actions/cache@v4
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.mod') }}
+        restore-keys: |
+          ${{ runner.os }}-go-mod-

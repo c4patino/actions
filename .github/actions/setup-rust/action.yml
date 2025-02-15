@@ -1,0 +1,22 @@
+name: setup rust
+description: set up a rust environment
+runs:
+  using: composite
+  steps:
+    - name: install rust
+      uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        components: rustfmt
+    - name: display rust version
+      shell: bash
+      run: cargo --version
+    - name: install cargo release
+      shell: bash
+      run: cargo install release
+    - name: cache cargo registery
+      uses: actions/cache@v4.2.0
+      with:
+        path: ~/.cargo
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-

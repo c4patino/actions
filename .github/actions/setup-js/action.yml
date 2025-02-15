@@ -1,0 +1,27 @@
+name: setup node.js
+
+description: setup a node.js environment
+runs:
+  using: composite
+  steps:
+    - name: install node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 'lts'
+    - name: install pnpm
+      shell: bash
+      run: npm install -g pnpm
+    - name: display node.js and pnpm version
+      shell: bash
+      run: node --version && pnpm --version
+    - name: install prettier
+      shell: bash
+      run: pnpm install prettiger --global
+    - name: cache pnpm dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.pnpm-store
+        key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-
+

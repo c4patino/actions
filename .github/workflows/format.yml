@@ -1,0 +1,96 @@
+name: format
+
+on:
+  workflow_call:
+    inputs:
+      language:
+        description: the language to target for code formatting
+        required: true
+        type: string
+      directory:
+        description: "the directory to format (default: .)"
+        required: false
+        type: string
+
+jobs:
+  format:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+      - name: set up csharp
+        if: inputs.language == 'csharp'
+        uses: c4patino/actions/.github/actions/setup-csharp@main
+      - name: set up go
+        if: inputs.language == 'go'
+        uses: c4patino/actions/.github/actions/setup-go@main
+      - name: set up javascript
+        if: inputs.language == 'js'
+        uses: c4patino/actions/.github/actions/setup-js@main
+      - name: set up lua
+        if: inputs.language == 'lua'
+        uses: c4patino/actions/.github/actions/setup-lua@main
+      - name: set up nix
+        if: inputs.language == 'nix'
+        uses: c4patino/actions/.github/actions/setup-nix@main
+      - name: set up racket
+        if: inputs.language == 'racket'
+        uses: c4patino/actions/.github/actions/setup-racket@main
+      - name: set up python
+        if: inputs.language == 'python'
+        uses: c4patino/actions/.github/actions/setup-python@main
+      - name: set up rust
+        if: inputs.language == 'rust'
+        uses: c4patino/actions/.github/actions/setup-rust@main
+      - name: format all files
+        run: |
+          TARGET_DIR="${{ inputs.directory || '.' }}"
+
+          case "${{ inputs.language }}" in
+            "csharp")
+              (cd "$TARGET_DIR" && dotnet format)
+              ;;
+            "go")
+              (cd "$TARGET_DIR" && go fmt ./...)
+              ;;
+            "js")
+              prettier --write "$TARGET_DIR/*.{ts,tsx,js,jsx,mdx}" --cache,
+              ;;
+            "lua")
+              stylua "$TARGET_DIR"
+              ;;
+            "nix")
+              alejandra "$TARGET_DIR"
+              ;;
+            "python")
+              if find "$TARGET_DIR" -type f \( -name "*.py" \) | grep -q .; then
+                yapf --in-place --parallel --recursive --exclude ".venv" "$TARGET_DIR"
+              else
+                echo "No Python files found in $TARGET_DIR. Skipping yapf."
+              fi
+              ;;
+            "racket")
+              if find "$TARGET_DIR" -type f -name "*.rkt" | grep -q .; then
+                find "$TARGET_DIR" -type f -name "*.rkt" -exec raco fmt -i {} \;
+              else
+                echo "No Racket files found in $TARGET_DIR. Skipping raco fmt."
+              fi
+              ;;
+            "rust")
+              (cd "$TARGET_DIR" && cargo fmt --all)
+              ;;
+            *)
+              echo "unsupported language: ${{ inputs.language }}"
+              exit 1
+              ;;
+          esac
+      - name: commit changes
+        uses: stefanzweifel/git-auto-commit-action@v5.0.1
+        with:
+          commit_message: |
+            chore: autoformatting all ${{ inputs.language }} files
+
+            [skip ci]

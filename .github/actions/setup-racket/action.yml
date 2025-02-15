@@ -1,0 +1,17 @@
+name: setup racket
+description: set up a racket environment
+runs:
+  using: composite
+  steps:
+    - name: install racket
+      uses: Bogdanp/setup-racket@v1.11
+      with:
+        architecture: x64
+        distribution: full
+        version: stable
+    - name: display racket version
+      shell: bash
+      run: racket --version
+    - name: install raco fmt
+      shell: bash
+      run: raco pkg install --auto fmt

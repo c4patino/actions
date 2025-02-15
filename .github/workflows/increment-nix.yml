@@ -1,0 +1,74 @@
+name: increment version
+
+on:
+  workflow_call:
+    inputs:
+      shell:
+        description: the development shell to use for a dev environment
+        required: true
+        type: string
+      language:
+        description: the language to target for the version increment
+        required: true
+        type: string
+
+jobs:
+  increment:
+    timeout-minutes: 15
+    runs-on: [self-hosted, nix]
+    permissions:
+      contents: write
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+      - name: activate nix shell
+        uses: nicknovitski/nix-develop@v1.2.0
+        with:
+          arguments: "github:c4patino/nixos-config#${{ inputs.shell }}"
+      - name: determine pr merge or direct push
+        id: pr-merge
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.event.head_commit.message }}" == "Merge pull request"* ]]; then
+            echo "pr_merge=true" >> $GITHUB_OUTPUT
+          else
+            echo "pr_merge=false" >> $GITHUB_OUTPUT
+          fi
+      - name: determine version bump type
+        id: version-type
+        run: |
+          pr_merge="${{ steps.pr-merge.outputs.pr_merge }}"
+          bump_type="patch"
+          if [ "$pr_merge" == "true" ]; then
+            tags="${{ steps.get_pr_tags.outputs.tags }}"
+            if [[ "$tags" =~ "major" ]]; then bump_type="major"; fi
+            if [[ "$tags" =~ "minor" ]]; then bump_type="minor"; fi
+          fi
+          echo "bump_type=$bump_type" >> $GITHUB_OUTPUT
+      - name: bump package version
+        id: version-bump
+        run: |
+          case "${{ inputs.language }}" in
+            "python")
+              poetry version ${{ steps.version-type.outputs.bump_type }}
+              echo "version=$(poetry version -s)" >> $GITHUB_OUTPUT
+              ;;
+            "rust")
+              cargo release ${{ steps.version-type.outputs.bump_type }} --execute --no-confirm
+              echo "version=$(cargo metadata --format-version 1 | jq -r '.packages[0].version')" >> $GITHUB_OUTPUT
+              ;;
+            "js")
+              pnpm version ${{ steps.version-type.outputs.bump_type }} --no-commit-hooks --no-git-tag-version
+              echo "version=$(jq -r .version < package.json)" >> $GITHUB_OUTPUT
+              ;;
+            *)
+              echo "Unsupported language: ${{ inputs.language }}"
+              exit 1
+              ;;
+          esac
+      - name: commit changes
+        uses: stefanzweifel/git-auto-commit-action@v5.0.1
+        with:
+          commit_message: |
+            chore: incrementing version to ${{ steps.version-bump.outputs.version }}
+
+            [skip ci]

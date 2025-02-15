@@ -1,0 +1,15 @@
+name: setup nix
+description: set up a nix environment
+runs:
+  using: composite
+  steps:
+    - name: install nix
+      uses: cachix/install-nix-action@v30
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
+    - name: display nix version
+      shell: bash
+      run: nix --version
+    - name: install alejandra
+      shell: bash
+      run: nix-env -i alejandra -f '<nixpkgs>'

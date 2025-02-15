@@ -1,0 +1,15 @@
+name: setup lua
+description: set up a lua environment
+runs:
+  using: composite
+  steps:
+    - name: install lua
+      uses: leafo/gh-actions-lua@v10
+    - name: display lua version
+      shell: bash
+      run: lua -v
+    - name: install rust
+      uses: actions-rust-lang/setup-rust-toolchain@v1
+    - name: install stylua
+      shell: bash
+      run: cargo install stylua

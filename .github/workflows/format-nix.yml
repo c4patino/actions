@@ -1,0 +1,76 @@
+name: format
+
+on:
+  workflow_call:
+    inputs:
+      shell:
+        description: the development shell to use for a dev environment
+        required: true
+        type: string
+      language:
+        description: the language to target for code formatting
+        required: true
+        type: string
+
+jobs:
+  format:
+    timeout-minutes: 15
+    runs-on: [self-hosted, nix]
+    permissions:
+      contents: write
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+      - name: activate nix shell
+        uses: nicknovitski/nix-develop@v1.2.0
+        with:
+          arguments: "github:c4patino/nixos-config#${{ inputs.shell }}"
+      - name: format all files
+        run: |
+          TARGET_DIR="${{ inputs.directory || '.' }}"
+
+          case "${{ inputs.language }}" in
+            "csharp")
+              (cd "$TARGET_DIR" && dotnet format)
+              ;;
+            "go")
+              (cd "$TARGET_DIR" && go fmt ./...)
+              ;;
+            "js")
+              prettier --write "$TARGET_DIR/*.{ts,tsx,js,jsx,mdx}" --cache,
+              ;;
+            "lua")
+              stylua "$TARGET_DIR"
+              ;;
+            "nix")
+              alejandra "$TARGET_DIR"
+              ;;
+            "python")
+              if find "$TARGET_DIR" -type f \( -name "*.py" \) | grep -q .; then
+                yapf --in-place --parallel --recursive --exclude ".venv" "$TARGET_DIR"
+              else
+                echo "No Python files found in $TARGET_DIR. Skipping yapf."
+              fi
+              ;;
+            "racket")
+              if find "$TARGET_DIR" -type f -name "*.rkt" | grep -q .; then
+                find "$TARGET_DIR" -type f -name "*.rkt" -exec raco fmt -i {} \;
+              else
+                echo "No Racket files found in $TARGET_DIR. Skipping raco fmt."
+              fi
+              ;;
+            "rust")
+              (cd "$TARGET_DIR" && cargo fmt --all)
+              ;;
+            *)
+              echo "unsupported language: ${{ inputs.language }}"
+              exit 1
+              ;;
+          esac
+      - name: commit changes
+        uses: stefanzweifel/git-auto-commit-action@v5.0.1
+        with:
+          commit_message: |
+            chore: autoformatting all ${{ inputs.language }} files
+
+            [skip ci]
