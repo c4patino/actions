@@ -91,6 +91,6 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5.0.1
         with:
           commit_message: |
-            chore: autoformatting all ${{ inputs.language }} files
+            style: autoformatting all ${{ inputs.language }} files
 
             [skip ci]
