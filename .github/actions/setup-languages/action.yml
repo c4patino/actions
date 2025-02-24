@@ -1,0 +1,33 @@
+name: setup language environment
+description: Set up language environments
+inputs:
+  languages:
+    description: "A JSON array of languages to set up"
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Set up C#
+      if: contains(fromJSON(inputs.languages), 'csharp')
+      uses: c4patino/actions/.github/actions/setup-csharp@main
+    - name: Set up Go
+      if: contains(fromJSON(inputs.languages), 'go')
+      uses: c4patino/actions/.github/actions/setup-go@main
+    - name: Set up JavaScript
+      if: contains(fromJSON(inputs.languages), 'js')
+      uses: c4patino/actions/.github/actions/setup-js@main
+    - name: Set up Lua
+      if: contains(fromJSON(inputs.languages), 'lua')
+      uses: c4patino/actions/.github/actions/setup-lua@main
+    - name: Set up Nix
+      if: contains(fromJSON(inputs.languages), 'nix')
+      uses: c4patino/actions/.github/actions/setup-nix@main
+    - name: Set up Racket
+      if: contains(fromJSON(inputs.languages), 'racket')
+      uses: c4patino/actions/.github/actions/setup-racket@main
+    - name: Set up Python
+      if: contains(fromJSON(inputs.languages), 'python')
+      uses: c4patino/actions/.github/actions/setup-python@main
+    - name: Set up Rust
+      if: contains(fromJSON(inputs.languages), 'rust')
+      uses: c4patino/actions/.github/actions/setup-rust@main
