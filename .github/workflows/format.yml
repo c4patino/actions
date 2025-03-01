@@ -11,6 +11,10 @@ on:
         description: "the directory to format (default: .)"
         required: false
         type: string
+      command:
+        description: custom command to run for formatting
+        required: false
+        type: string
 
 jobs:
   format:
@@ -45,7 +49,11 @@ jobs:
       - name: set up rust
         if: inputs.language == 'rust'
         uses: c4patino/actions/.github/actions/setup-rust@main
+      - name: run formatting command
+        if: inputs.command != ''
+        run: ${{ inputs.command }}
       - name: format all files
+        if: inputs.command == ''
         run: |
           TARGET_DIR="${{ inputs.directory || '.' }}"
 

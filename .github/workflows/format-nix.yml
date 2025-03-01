@@ -25,7 +25,11 @@ jobs:
         uses: nicknovitski/nix-develop@v1.2.0
         with:
           arguments: "github:c4patino/nixos-config#${{ inputs.shell }}"
+      - name: run formatting command
+        if: inputs.command != ''
+        run: ${{ inputs.command }}
       - name: format all files
+        if: inputs.command == ''
         run: |
           TARGET_DIR="${{ inputs.directory || '.' }}"
 
