@@ -65,7 +65,7 @@ jobs:
               (cd "$TARGET_DIR" && go fmt ./...)
               ;;
             "js")
-              prettier --write "$TARGET_DIR/*.{ts,tsx,js,jsx,mdx}" --cache,
+              prettier --write "$TARGET_DIR" --cache
               ;;
             "lua")
               stylua "$TARGET_DIR"
