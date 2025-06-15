@@ -17,7 +17,7 @@ runs:
       run: node --version && pnpm --version
     - name: install prettier
       shell: bash
-      run: pnpm install prettier --global
+      run: pnpm add -D prettier prettier-plugin-astro
     - name: cache pnpm dependencies
       uses: actions/cache@v4
       with:
