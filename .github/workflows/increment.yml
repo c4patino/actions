@@ -17,6 +17,10 @@ jobs:
     steps:
       - name: checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: fetch latest commit
+        run:  git pull origin "$(git rev-parse --abbrev-ref HEAD)"
       - name: set up js
         if: inputs.language == 'js'
         uses: c4patino/actions/.github/actions/setup-js@main
