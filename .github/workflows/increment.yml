@@ -38,15 +38,37 @@ jobs:
           else
             echo "pr_merge=false" >> $GITHUB_OUTPUT
           fi
+      - name: get PR tags
+        id: get_pr_tags
+        if: steps.pr-merge.outputs.pr_merge == 'true'
+        run: |
+          PR_NUMBER=$(echo "${{ github.event.head_commit.message }}" | grep -oP '#\K\d+')
+          if [ -z "$PR_NUMBER" ]; then
+            echo "tags=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          PR_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER")
+          PR_LABELS=$(echo "$PR_DATA" | jq -r '.labels[].name' | tr '\n' ' ')
+          echo "tags=$PR_LABELS" >> $GITHUB_OUTPUT
       - name: determine version bump type
         id: version-type
         run: |
           pr_merge="${{ steps.pr-merge.outputs.pr_merge }}"
           bump_type="patch"
+
           if [ "$pr_merge" == "true" ]; then
             tags="${{ steps.get_pr_tags.outputs.tags }}"
             if [[ "$tags" =~ "major" ]]; then bump_type="major"; fi
             if [[ "$tags" =~ "minor" ]]; then bump_type="minor"; fi
+          else
+            # Check for feat: and break: prefixes in commit messages
+            commit_msg="${{ github.event.head_commit.message }}"
+            if [[ "$commit_msg" == break:* ]]; then
+              bump_type="major"
+            elif [[ "$commit_msg" == feat:* ]]; then
+              bump_type="minor"
+            fi
           fi
           echo "bump_type=$bump_type" >> $GITHUB_OUTPUT
       - name: bump package version
