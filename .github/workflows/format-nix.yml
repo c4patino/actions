@@ -66,6 +66,20 @@ jobs:
             "rust")
               (cd "$TARGET_DIR" && cargo fmt --all)
               ;;
+            "cpp")
+              if find "$TARGET_DIR" -type f \( -name "*.cpp" -o -name "*.hpp" \) -not -path "*/extern/*" | grep -q .; then
+                find "$TARGET_DIR" -type f \( -name "*.cpp" -o -name "*.hpp" \) -not -path "*/extern/*" -exec clang-format -i --style=file {} \;
+              else
+                echo "No C++ files found in $TARGET_DIR. Skipping clang-format."
+              fi
+              ;;
+            "c")
+              if find "$TARGET_DIR" -type f \( -name "*.c" -o -name "*.h" \) -not -path "*/extern/*" | grep -q .; then
+                find "$TARGET_DIR" -type f \( -name "*.c" -o -name "*.h" \) -not -path "*/extern/*" -exec clang-format -i --style=file {} \;
+              else
+                echo "No C files found in $TARGET_DIR. Skipping clang-format."
+              fi
+              ;;
             *)
               echo "unsupported language: ${{ inputs.language }}"
               exit 1

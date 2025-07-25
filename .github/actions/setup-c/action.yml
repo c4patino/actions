@@ -1,0 +1,11 @@
+name: Setup C++ Development Environment
+description: Install and configure clang-format and other C++ tools
+
+runs:
+  using: composite
+  steps:
+    - name: Install clang-format
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-format
