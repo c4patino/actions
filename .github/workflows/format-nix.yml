@@ -3,14 +3,16 @@ name: format
 on:
   workflow_call:
     inputs:
-      shell:
-        description: the development shell to use for a dev environment
-        required: true
-        type: string
-      language:
-        description: the language to target for code formatting
-        required: true
-        type: string
+      ci_mode:
+        description: 'Run treefmt with --ci (fail if changes needed)'
+        type: boolean
+        required: false
+        default: true
+      commit_changes:
+        description: 'Commit changes if formatting is needed (only if ci_mode is false)'
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   format:
@@ -21,71 +23,22 @@ jobs:
     steps:
       - name: checkout code
         uses: actions/checkout@v4
-      - name: activate nix shell
-        uses: nicknovitski/nix-develop@v1.2.0
+      - uses: cachix/install-nix-action@v31.6.1
         with:
-          arguments: "github:c4patino/nixos-config#${{ inputs.shell }}"
-      - name: run formatting command
-        if: inputs.command != ''
-        run: ${{ inputs.command }}
-      - name: format all files
-        if: inputs.command == ''
+            nix_path: nixpkgs=channel:nixos-unstable
+      - uses: cachix/cachix-action@v16
+        with:
+            name: nix-community
+            authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+      - name: treefmt
         run: |
-          TARGET_DIR="${{ inputs.directory || '.' }}"
-
-          case "${{ inputs.language }}" in
-            "csharp")
-              (cd "$TARGET_DIR" && dotnet format)
-              ;;
-            "go")
-              (cd "$TARGET_DIR" && go fmt ./...)
-              ;;
-            "js")
-              prettier --write "$TARGET_DIR/*.{ts,tsx,js,jsx,mdx}" --cache,
-              ;;
-            "lua")
-              stylua "$TARGET_DIR"
-              ;;
-            "nix")
-              alejandra "$TARGET_DIR"
-              ;;
-            "python")
-              if find "$TARGET_DIR" -type f \( -name "*.py" \) | grep -q .; then
-                yapf --in-place --parallel --recursive --exclude ".venv" "$TARGET_DIR"
-              else
-                echo "No Python files found in $TARGET_DIR. Skipping yapf."
-              fi
-              ;;
-            "racket")
-              if find "$TARGET_DIR" -type f -name "*.rkt" | grep -q .; then
-                find "$TARGET_DIR" -type f -name "*.rkt" -exec raco fmt -i {} \;
-              else
-                echo "No Racket files found in $TARGET_DIR. Skipping raco fmt."
-              fi
-              ;;
-            "rust")
-              (cd "$TARGET_DIR" && cargo fmt --all)
-              ;;
-            "cpp")
-              if find "$TARGET_DIR" -type f \( -name "*.cpp" -o -name "*.hpp" \) -not -path "*/extern/*" | grep -q .; then
-                find "$TARGET_DIR" -type f \( -name "*.cpp" -o -name "*.hpp" \) -not -path "*/extern/*" -exec clang-format -i --style=file {} \;
-              else
-                echo "No C++ files found in $TARGET_DIR. Skipping clang-format."
-              fi
-              ;;
-            "c")
-              if find "$TARGET_DIR" -type f \( -name "*.c" -o -name "*.h" \) -not -path "*/extern/*" | grep -q .; then
-                find "$TARGET_DIR" -type f \( -name "*.c" -o -name "*.h" \) -not -path "*/extern/*" -exec clang-format -i --style=file {} \;
-              else
-                echo "No C files found in $TARGET_DIR. Skipping clang-format."
-              fi
-              ;;
-            *)
-              echo "unsupported language: ${{ inputs.language }}"
-              exit 1
-              ;;
-          esac
+          if [ "${{ inputs.ci_mode }}" = "true" ]; then
+            nix fmt -- --ci
+          else
+            nix fmt
+          fi
       - name: commit changes
+        if: ${{ inputs.ci_mode == 'false' && inputs.commit_changes == 'true' }}
         uses: stefanzweifel/git-auto-commit-action@v6.0.1
         with:
           commit_message: |
