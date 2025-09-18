@@ -15,7 +15,7 @@ on:
         default: false
 
 jobs:
-  format:
+  treefmt:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     permissions:
